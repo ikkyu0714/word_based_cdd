@@ -1,16 +1,12 @@
-from all_synsets_get import All_Synstes_Get
+from all_synsets_get import All_Synsets_Get
 # Wordnetをインポート
 from nltk.corpus import wordnet as wn
-from neo4j import GraphDatabase
-import neo4j_write_synset as write_neo4j
 import matplotlib.pyplot as plt
 import networkx as nx
 import openpyxl
 import collections
 
-#driver = GraphDatabase.driver('bolt://localhost:7687', auth=('neo4j', 'ikkyu2419'))
-
-class Word_Range_Synset(All_Synstes_Get):
+class Word_Range_Synset(All_Synsets_Get):
     def __init__(self):
         super().__init__()
         self.jpn_word_range_dict = {}
@@ -82,11 +78,15 @@ class Word_Range_Synset(All_Synstes_Get):
         for lemma in lemmas:
             range_list = [target]
 
+            print('-----------------------------------')
             # 上位概念を探索
             range_list = self.search_hypernym_word(lemma, target, range_list, lang)
+            print(range_list)
 
             # 下位概念を探索
             range_list = self.search_hyponym_word(lemma, target, range_list, lang)
+            print(range_list)
+            print('-----------------------------------')
 
             if lang == 'jpn':
                 self.jpn_word_range_dict[lemma] = len(range_list)
@@ -169,22 +169,21 @@ class Word_Range_Synset(All_Synstes_Get):
     # 単語同士で範囲に違いがある単語の組み合わせをリストに追加
     def parents_brother_word_compare(self, synset):
         language_list = ['cmn', 'jpn']
-
         for language in language_list:
             # 日本語の単語とその範囲を取り出す
             for item in self.parents_range_get(synset, language).items():
+                lang = [language]
                 # 単語が所属している概念を一つずつ取り出す
                 for including_synset in item[1]:
                     jpn_and_cmn_range = 0
                     # 英語の単語とその範囲を取り出す
-                    lang = [language]
                     for compare_item in self.parents_range_get(including_synset, list(set(language_list)^set(lang))[0]).items():
-                        #print('item:{}, compare_item:{}'.format(item[1], compare_item[1]))
+                        #print('item:{}, compare_item:{}, type:{}'.format(item[1], compare_item[1], type(compare_item[1][0])))
                         commmon_synset_num = len(set(item[1])&set(compare_item[1]))
                         #print((commmon_synset_num/(len(item[1])+len(compare_item[1])-commmon_synset_num))*100)
                         self.common_synset_per_list.append((commmon_synset_num/(len(item[1])+len(compare_item[1])-commmon_synset_num))*100)
                         # 概念の範囲が異なるかを確認
-                        if set(item[1]) != set(compare_item[1]):
+                        if set(item[1]) != set(compare_item[1]): # 単語が付随しているsynsetが異なる時
                             if language == 'jpn':
                                 # 異なった単語の組み合わせと同一の単語の組み合わせが入っていないかを確認する
                                 for records in self.parents_different_list:
@@ -200,6 +199,25 @@ class Word_Range_Synset(All_Synstes_Get):
                                 else:
                                     self.parents_different_list.append([compare_item[0], item[0], compare_item[1], item[1]])
 
+                        """# 単語が対応づいているか確認する場合
+                        if self.word_confirm(item[1], compare_item[1]) == True: # 単語が対応づいているか確認
+                            if set(item[1]) != set(compare_item[1]): # 単語が付随しているsynsetが異なる時
+                                if language == 'jpn':
+                                    # 異なった単語の組み合わせと同一の単語の組み合わせが入っていないかを確認する
+                                    for records in self.parents_different_list:
+                                        if item[0] == records[0] and compare_item[0] == records[1]:
+                                            break
+                                    else:
+                                        self.parents_different_list.append([item[0], compare_item[0], item[1], compare_item[1]])
+                                elif language == 'cmn':
+                                    # 異なった単語の組み合わせと同一の単語の組み合わせが入っていないかを確認する
+                                    for records in self.parents_different_list:
+                                        if compare_item[0] == records[0] and item[0] == records[1]:
+                                            break
+                                    else:
+                                        self.parents_different_list.append([compare_item[0], item[0], compare_item[1], item[1]])"""
+
+        #兄弟の単語で比較
         for item_jpn in self.brother_range_get(synset, 'jpn').items():
             for item_eng in self.brother_range_get(synset, 'cmn').items():
                 if set(item_jpn[1]) != set(item_eng[1]):
@@ -208,6 +226,24 @@ class Word_Range_Synset(All_Synstes_Get):
                             break
                     else:
                         self.brother_different_list.append([item_jpn[0], item_eng[0], item_jpn[1], item_eng[1]])
+
+                """#単語があるか確認する場合
+                if self.word_confirm(item_jpn[1], item_eng[1]) == True:
+                    if set(item_jpn[1]) != set(item_eng[1]):
+                        for brother_records in self.brother_different_list:
+                            if item_jpn[0] == brother_records[0] and item_eng[0] == brother_records[1]:
+                                break
+                        else:
+                            self.brother_different_list.append([item_jpn[0], item_eng[0], item_jpn[1], item_eng[1]])"""
+
+    def word_confirm(self, item_synset, compare_synset):
+        for item in item_synset:
+            if item.lemma_names('cmn') == [] or item.lemma_names('jpn') == []:
+                return False
+        for item2 in compare_synset:
+            if item2.lemma_names('cmn') == [] or item2.lemma_names('jpn') == []:
+                return False
+        return True
 
     def print_compare_result(self, target_word = None):
         lists = [self.parents_different_list, self.brother_different_list]
@@ -238,11 +274,11 @@ class Word_Range_Synset(All_Synstes_Get):
                 sheet.cell(row = max_row+1, column = 5).value = len(data[2])
                 sheet.cell(row = max_row+1, column = 6).value = len(data[3])
             if list == self.different_list:
-                book.save('../../研究/WordNet比較データ/親子兄弟_所属単語比較_0103.xlsx')
+                book.save('../../../Documents/研究/WordNet比較データ/親子兄弟_所属単語比較_0726.xlsx')
             elif list == self.parents_different_list:
-                book.save('../../研究/WordNet比較データ/親子_所属単語比較_0103_2.xlsx')
+                book.save('../../../Documents/研究/WordNet比較データ/親子_所属単語比較_0726.xlsx')
             elif list == self.brother_different_list:
-                book.save('../../研究/WordNet比較データ/兄弟_所属単語比較_0103_2.xlsx')
+                book.save('../../../Documents/研究/WordNet比較データ/兄弟_所属単語比較_0726.xlsx')
 
     def search_brother_word(self, lemma, target, range_list, lang):
         brothers = self.get_brothers(target)
@@ -258,10 +294,15 @@ class Word_Range_Synset(All_Synstes_Get):
         hypernyms = self.get_hypernyms(target)
         for hypernym in hypernyms:
             words = self.word_get(hypernym, lang)
+            # 単語が空だった場合、上位の概念から単語群を取得
+            if words == []:
+                for more_hypernym in self.get_hypernyms(hypernym):
+                    words.extend(self.word_get(more_hypernym, lang))
             if lemma in words:
                 range_list.append(hypernym)
                 range_list = self.search_hypernym_word(lemma, hypernym, range_list, lang)
-
+        
+        #print('hypernyms:{}, target:{}, lemma:{}, lang:{}'.format(hypernyms,target, lemma ,lang))
         return range_list
 
     # 下位概念に単語が含まれていないか確認する
@@ -270,6 +311,9 @@ class Word_Range_Synset(All_Synstes_Get):
         if hyponyms != []:
             for hyponym in hyponyms:
                 words = self.word_get(hyponym, lang)
+                # 単語が対応づいていない時、さらに下の概念から単語を借りてくる
+                if words == []:
+                    words.extend(self.word_get(target, lang))
                 if lemma in words:
                     range_list.append(hyponym)
                     range_list = self.search_hyponym_word(lemma, hyponym, range_list, lang)
@@ -297,5 +341,5 @@ if __name__ == '__main__':
         #word_range.word_compare(bfs_edge_link_pare[1])
 
     #print(collections.Counter(word_range.common_synset_per_list))
-    word_range.print_compare_result()
-    word_range.write_excel()
+    #word_range.print_compare_result()
+    #word_range.write_excel()

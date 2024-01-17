@@ -1,8 +1,6 @@
 from all_synsets_get import All_Synstes_Get
 # Wordnetをインポート
 from nltk.corpus import wordnet as wn
-from neo4j import GraphDatabase
-import neo4j_write_synset as write_neo4j
 import matplotlib.pyplot as plt
 import networkx as nx
 import openpyxl

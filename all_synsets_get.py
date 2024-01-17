@@ -6,9 +6,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 
-class All_Synstes_Get():
+class All_Synsets_Get():
     def __init__(self):
         self.G = nx.Graph()
+        #self.G = nx.DiGraph()
         self.search_list = []
 
     # 深さ優先探索
@@ -90,10 +91,10 @@ class All_Synstes_Get():
         out.to_csv("network.csv")
 
 if __name__ == '__main__':
-    all_synsets_get = All_Synstes_Get()
+    all_synsets_get = All_Synsets_Get()
     all_synsets_get.search_DFS(wn.synsets('entity')[0])
     print('ノード数:{}'.format(all_synsets_get.G.number_of_nodes()))
     print('エッジ数:{}'.format(all_synsets_get.G.number_of_edges()))
-    all_synsets_get.draw()
+    #all_synsets_get.draw()
     #all_synsets_get.output_graph_matplot()
     #all_synsets_get.output_csv_data()
