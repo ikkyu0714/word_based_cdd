@@ -232,4 +232,4 @@ if __name__ == '__main__':
         word_range.parents_brother_word_compare(bfs_edge_link_pare[1])
 
     word_range.print_compare_result()
-    word_range.write_excel()
+    # word_range.write_excel()
