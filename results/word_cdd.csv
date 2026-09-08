@@ -1,0 +1,2 @@
+﻿source_synset,first_language,second_language,first_lemma,second_lemma,first_range_size,second_range_size,common_size,jaccard_similarity,relation_type,meaning_type,first_synsets,second_synsets,common_synsets,first_only_synsets,second_only_synsets
+star.n.01,jpn,eng,スター,star,1,2,1,0.5,inclusion,A2,star.n.01,"star.n.01, star.n.03",star.n.01,,star.n.03

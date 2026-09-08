@@ -1,0 +1,11 @@
+wordnet:
+  root_synset: "entity.n.01"
+  target_synset: "star.n.01"
+
+languages:
+  first: "jpn"
+  second: "eng"
+
+output:
+  path: "results/word_cdd.csv"
+  
